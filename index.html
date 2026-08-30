@@ -337,6 +337,9 @@
   </div>
 </div>
 
+<!-- SheetJS for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -665,43 +668,170 @@
     }
   };
 
-  window.exportExcel = () => {
+  window.exportExcel = async () => {
     const all = window._allResults || [];
     if (!all.length) { alert("沒有資料可以匯出"); return; }
 
+    if (typeof XLSX === "undefined") {
+      alert("Excel 套件尚未載入，請稍後再試");
+      return;
+    }
+
     const typeKeys = ["inventor","creator","researcher","changer"];
-    const typeNames = {inventor:"發明家型",creator:"創作者型",researcher:"研究員型",changer:"改革者型"};
+    const typeInfo = {
+      inventor:{name:"發明家型",hex:"1D9E75",fgHex:"E1F5EE"},
+      creator: {name:"創作者型",hex:"185FA5",fgHex:"E6F1FB"},
+      researcher:{name:"研究員型",hex:"534AB7",fgHex:"EEEDFE"},
+      changer: {name:"改革者型",hex:"993C1D",fgHex:"FAECE7"}
+    };
 
-    const header = ["姓名","班級","主要人格",
-      "發明家%","創作者%","研究員%","改革者%",
-      ...questions.map((_,i)=>`Q${i+1}`),
-      "完成時間"].join("\t");
+    const wb = XLSX.utils.book_new();
 
-    const rows = all.map(r => {
+    /* ── Sheet 1：學生總覽 ── */
+    const s1Headers = ["姓名","班級","主要人格","發明家%","創作者%","研究員%","改革者%","完成時間"];
+    const s1Rows = all.map(r => {
       const time = r.time?.toDate ? r.time.toDate().toLocaleString("zh-TW",{hour12:false}) : "—";
       const pcts = typeKeys.map(k => {
         const sc = r.scores ? (r.scores[k]||0) : 0;
         return Math.round(sc/questions.length*100)+"%";
       });
-      const answerTexts = questions.map((q,qi) => {
-        const ans = r.answers ? r.answers[qi] : null;
-        if (!ans) return "—";
-        const opt = q.opts.find(o=>o.ty===ans);
-        return opt ? opt.t : "—";
-      });
-      return [r.name, r.class, typeNames[r.type]||r.type,
-        ...pcts, ...answerTexts, time].join("\t");
+      return [r.name, r.class, typeInfo[r.type]?.name||r.type, ...pcts, time];
+    });
+    const ws1 = XLSX.utils.aoa_to_sheet([s1Headers, ...s1Rows]);
+
+    // 欄寬
+    ws1["!cols"] = [
+      {wch:10},{wch:8},{wch:10},{wch:8},{wch:8},{wch:8},{wch:8},{wch:18}
+    ];
+
+    // 標題列樣式
+    s1Headers.forEach((_,ci) => {
+      const addr = XLSX.utils.encode_cell({r:0,c:ci});
+      if (!ws1[addr]) return;
+      ws1[addr].s = {
+        fill:{fgColor:{rgb:"1F4E79"}},
+        font:{color:{rgb:"FFFFFF"},bold:true,sz:11},
+        alignment:{horizontal:"center",vertical:"center"},
+        border:{bottom:{style:"thin",color:{rgb:"FFFFFF"}}}
+      };
     });
 
-    const tsv = [header, ...rows].join("\n");
-    const bom = "\uFEFF";
-    const blob = new Blob([bom+tsv], {type:"text/tab-separated-values;charset=utf-8"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "創客人格測驗結果.xls";
-    a.click();
-    URL.revokeObjectURL(url);
+    // 人格欄位著色（第3欄，index 2）
+    all.forEach((r,ri) => {
+      const addr = XLSX.utils.encode_cell({r:ri+1,c:2});
+      if (!ws1[addr]) return;
+      const info = typeInfo[r.type];
+      if (!info) return;
+      ws1[addr].s = {
+        fill:{fgColor:{rgb:info.fgHex}},
+        font:{color:{rgb:info.hex},bold:true},
+        alignment:{horizontal:"center"}
+      };
+    });
+
+    // 奇偶列底色
+    all.forEach((_,ri) => {
+      s1Headers.forEach((_,ci) => {
+        if (ci === 2) return;
+        const addr = XLSX.utils.encode_cell({r:ri+1,c:ci});
+        if (!ws1[addr]) return;
+        ws1[addr].s = ws1[addr].s || {};
+        ws1[addr].s.fill = {fgColor:{rgb: ri%2===0 ? "F7F7F5" : "FFFFFF"}};
+        ws1[addr].s.alignment = {horizontal:"center"};
+      });
+    });
+
+    XLSX.utils.book_append_sheet(wb, ws1, "學生總覽");
+
+    /* ── Sheet 2：詳細作答 ── */
+    const s2Headers = ["姓名","班級","題號","題目","作答內容","對應人格"];
+    const s2Rows = [];
+    all.forEach(r => {
+      questions.forEach((q,qi) => {
+        const ans = r.answers ? r.answers[qi] : null;
+        const opt = ans ? q.opts.find(o=>o.ty===ans) : null;
+        const typeName = ans ? (typeInfo[ans]?.name||ans) : "—";
+        s2Rows.push([
+          r.name, r.class,
+          `Q${qi+1}`, q.q,
+          opt ? opt.t : "—",
+          typeName
+        ]);
+      });
+      s2Rows.push(["","","","","",""]);
+    });
+
+    const ws2 = XLSX.utils.aoa_to_sheet([s2Headers, ...s2Rows]);
+    ws2["!cols"] = [{wch:10},{wch:8},{wch:5},{wch:28},{wch:22},{wch:10}];
+
+    s2Headers.forEach((_,ci) => {
+      const addr = XLSX.utils.encode_cell({r:0,c:ci});
+      if (!ws2[addr]) return;
+      ws2[addr].s = {
+        fill:{fgColor:{rgb:"1F4E79"}},
+        font:{color:{rgb:"FFFFFF"},bold:true,sz:11},
+        alignment:{horizontal:"center",vertical:"center"}
+      };
+    });
+
+    // 每位學生第一列加粗姓名
+    let rowIdx = 1;
+    all.forEach(r => {
+      const addr = XLSX.utils.encode_cell({r:rowIdx, c:0});
+      if (ws2[addr]) ws2[addr].s = {font:{bold:true}};
+      rowIdx += questions.length + 1;
+    });
+
+    XLSX.utils.book_append_sheet(wb, ws2, "詳細作答");
+
+    /* ── Sheet 3：班級統計 ── */
+    const counts = {inventor:0,creator:0,researcher:0,changer:0};
+    all.forEach(r => counts[r.type]++);
+    const accum = {inventor:0,creator:0,researcher:0,changer:0};
+    all.forEach(r => {
+      if (r.scores) typeKeys.forEach(k => accum[k]+=(r.scores[k]||0));
+    });
+    const grand = Object.values(accum).reduce((a,b)=>a+b,0)||1;
+
+    const s3Data = [
+      ["人格類型","人數","主要人格人數%","累計得分%"],
+      ...typeKeys.map(k => [
+        typeInfo[k].name,
+        counts[k],
+        Math.round(counts[k]/all.length*100)+"%",
+        Math.round(accum[k]/grand*100)+"%"
+      ]),
+      ["","","",""],
+      ["總人數", all.length, "",""]
+    ];
+
+    const ws3 = XLSX.utils.aoa_to_sheet(s3Data);
+    ws3["!cols"] = [{wch:12},{wch:6},{wch:14},{wch:12}];
+
+    s3Data[0].forEach((_,ci) => {
+      const addr = XLSX.utils.encode_cell({r:0,c:ci});
+      if (!ws3[addr]) return;
+      ws3[addr].s = {
+        fill:{fgColor:{rgb:"1F4E79"}},
+        font:{color:{rgb:"FFFFFF"},bold:true,sz:11},
+        alignment:{horizontal:"center"}
+      };
+    });
+
+    typeKeys.forEach((k,ri) => {
+      const addr = XLSX.utils.encode_cell({r:ri+1,c:0});
+      if (!ws3[addr]) return;
+      ws3[addr].s = {
+        fill:{fgColor:{rgb:typeInfo[k].fgHex}},
+        font:{color:{rgb:typeInfo[k].hex},bold:true},
+        alignment:{horizontal:"center"}
+      };
+    });
+
+    XLSX.utils.book_append_sheet(wb, ws3, "班級統計");
+
+    const date = new Date().toLocaleDateString("zh-TW").replace(/\//g,"-");
+    XLSX.writeFile(wb, `創客人格測驗_${date}.xlsx`);
   };
 </script>
 </body>
