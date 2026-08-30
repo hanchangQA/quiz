@@ -214,6 +214,17 @@
   .expand-btn:hover { text-decoration: underline; }
   .btn-export { background: var(--teal); color: #fff; }
   .btn-export:hover { opacity: .9; }
+  @media print {
+    .nav-bar, .row-btns, #page-start, #page-quiz, #page-teacher-login, #page-teacher { display: none !important; }
+    #page-result { display: block !important; }
+    .pdf-header { display: block !important; }
+    body { background: #fff; }
+    .container { max-width: 100%; padding: 0 1rem; }
+    .card { break-inside: avoid; border: 1px solid #ddd; }
+  }
+  .pdf-header { display: none; text-align: center; padding: 1rem 0 .5rem; }
+  .pdf-header h2 { font-size: 18px; font-weight: 700; }
+  .pdf-header p { font-size: 13px; color: var(--muted); }
   @media (max-width: 480px) {
     .hero { padding: 2rem 1rem 1.5rem; }
     .container { padding: 1rem .75rem; }
@@ -284,9 +295,14 @@
 <!-- ═══ PAGE: RESULT ═══ -->
 <div id="page-result" class="page">
   <div class="container">
+    <div class="pdf-header">
+      <h2>創客人格測驗結果</h2>
+      <p id="pdf-meta"></p>
+    </div>
     <div id="result-content"></div>
     <div class="row-btns" style="margin-top:1rem">
       <button class="btn btn-outline" onclick="resetQuiz()">重新測驗</button>
+      <button class="btn btn-primary" onclick="downloadPDF()">下載結果 PDF</button>
     </div>
   </div>
 </div>
@@ -488,6 +504,8 @@
       <div class="card"><h3>適合的專題方向</h3><div style="margin-top:4px">${tags}</div></div>
       <div class="card"><h3>各類型分佈</h3><div style="margin-top:8px">${bars}</div></div>`;
 
+    document.getElementById("pdf-meta").textContent =
+      `${userName} 同學・${userClass}・${new Date().toLocaleDateString("zh-TW")}`;
     showPage("result");
   }
 
@@ -615,6 +633,13 @@
   }
 
   window.loadDashboard = loadDashboard;
+
+  window.downloadPDF = () => {
+    const name = document.getElementById("pdf-meta").textContent.split("・")[0] || "學生";
+    document.title = `創客人格測驗_${name}`;
+    window.print();
+    setTimeout(() => { document.title = "創客人格測驗"; }, 2000);
+  };
 
   window.clearAllData = async () => {
     if (!confirm("確定要刪除所有學生測驗結果嗎？此動作無法復原。")) return;
