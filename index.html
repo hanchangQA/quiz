@@ -143,7 +143,7 @@
     font-size: 12px; font-weight: 700; color: var(--muted); flex-shrink: 0;
   }
   .opt.sel .opt-letter { background: var(--teal); color: #fff; border-color: var(--teal); }
-  .q-nav { display: flex; justify-content: flex-end; margin-top: 1.2rem; }
+  .q-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 1.2rem; }
 
   /* ── RESULT ── */
   .result-hero {
@@ -203,6 +203,17 @@
     font-family: monospace; font-size: 13px;
   }
 
+  .detail-panel {
+    display: none; background: var(--bg);
+    border-top: 1px solid var(--border); padding: 12px 14px;
+  }
+  .detail-panel.open { display: block; }
+  .detail-q { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+  .detail-a { font-size: 13px; color: var(--text); margin-bottom: 10px; padding-left: 8px; border-left: 2px solid var(--teal); }
+  .expand-btn { background: none; border: none; cursor: pointer; color: var(--teal); font-size: 13px; font-family: inherit; padding: 0; }
+  .expand-btn:hover { text-decoration: underline; }
+  .btn-export { background: var(--teal); color: #fff; }
+  .btn-export:hover { opacity: .9; }
   @media (max-width: 480px) {
     .hero { padding: 2rem 1rem 1.5rem; }
     .container { padding: 1rem .75rem; }
@@ -264,6 +275,7 @@
     <div class="q-text" id="q-text"></div>
     <div class="opts" id="opts"></div>
     <div class="q-nav">
+      <button class="btn btn-outline" id="btn-prev" onclick="prevQ()">← 上一題</button>
       <button class="btn btn-primary" id="btn-next" disabled onclick="nextQ()">下一題</button>
     </div>
   </div>
@@ -293,7 +305,7 @@
         <button class="btn btn-primary" onclick="teacherLogin()">進入</button>
         <button class="btn btn-outline" onclick="showPage('start')">返回</button>
       </div>
-      <div style="font-size:12px;color:var(--muted);margin-top:.75rem">預設密碼：<strong>teacher123</strong>（可在程式碼中修改）</div>
+
     </div>
   </div>
 </div>
@@ -320,13 +332,13 @@
      從 Firebase Console > 專案設定 > 你的應用程式複製
   ══════════════════════════════════════════════ */
   const firebaseConfig = {
-  apiKey: "AIzaSyCQAwD5a2nZCNNJ0gnG5GFBqb5rMQws3Bs",
-  authDomain: "quiz-maker-personality.firebaseapp.com",
-  projectId: "quiz-maker-personality",
-  storageBucket: "quiz-maker-personality.firebasestorage.app",
-  messagingSenderId: "341066264169",
-  appId: "1:341066264169:web:654a15db37acfad940bcf8"
-};
+    apiKey:            "AIzaSyCQAwD5a2nZCNNJ0gnG5GFBqb5rMQws3Bs",
+    authDomain:        "quiz-maker-personality.firebaseapp.com",
+    projectId:         "quiz-maker-personality",
+    storageBucket:     "quiz-maker-personality.firebasestorage.app",
+    messagingSenderId: "341066264169",
+    appId:             "1:341066264169:web:654a15db37acfad940bcf8"
+  };
   /* ▲▲▲  填入結束  ▲▲▲ */
 
   const TEACHER_PWD = "teacher123"; // 可修改老師密碼
@@ -363,7 +375,7 @@
     changer:    {name:"改革者型",icon:"🌍",color:"#993C1D",bg:"#FAECE7",desc:"你有同理心，想用科技幫助更多人，以人為本。",topics:["輔助身障者裝置","長者科技應用","食物浪費追蹤","校園安全系統","環境監測平台"]}
   };
 
-  let cur=0, scores={inventor:0,creator:0,researcher:0,changer:0}, sel=null;
+  let cur=0, scores={inventor:0,creator:0,researcher:0,changer:0}, sel=null, answers=[];
   let userName="", userClass="";
 
   /* ── 頁面切換 ── */
@@ -385,7 +397,7 @@
     if (!c) { document.getElementById("e-class").textContent = "請輸入班級"; ok=false; }
     if (!ok) return;
     userName=n; userClass=c;
-    cur=0; scores={inventor:0,creator:0,researcher:0,changer:0}; sel=null;
+    cur=0; scores={inventor:0,creator:0,researcher:0,changer:0}; sel=null; answers=[];
     showPage("quiz"); renderQ();
   };
 
@@ -395,21 +407,25 @@
     document.getElementById("q-emoji").textContent = q.e;
     document.getElementById("q-text").textContent = q.q;
     document.getElementById("prog-fill").style.width = ((cur+1)/questions.length*100)+"%";
-    sel = null;
+    sel = answers[cur] || null;
     const btn = document.getElementById("btn-next");
-    btn.disabled = true;
+    btn.disabled = !sel;
     btn.textContent = cur === questions.length-1 ? "查看結果 ✨" : "下一題";
+
+    const prevBtn = document.getElementById("btn-prev");
+    prevBtn.style.visibility = cur === 0 ? "hidden" : "visible";
 
     const opts = document.getElementById("opts");
     opts.innerHTML = "";
     ["A","B","C","D"].forEach((L,i) => {
       const o = q.opts[i];
       const b = document.createElement("button");
-      b.className = "opt";
+      b.className = "opt" + (sel === o.ty ? " sel" : "");
       b.innerHTML = `<span class="opt-letter">${L}</span><span>${o.t}</span>`;
       b.onclick = () => {
         document.querySelectorAll(".opt").forEach(x => x.classList.remove("sel"));
         b.classList.add("sel"); sel = o.ty;
+        answers[cur] = o.ty;
         document.getElementById("btn-next").disabled = false;
       };
       opts.appendChild(b);
@@ -418,10 +434,19 @@
 
   window.nextQ = () => {
     if (!sel) return;
-    scores[sel]++;
+    answers[cur] = sel;
     cur++;
-    if (cur >= questions.length) showResult();
-    else renderQ();
+    if (cur >= questions.length) {
+      scores = {inventor:0,creator:0,researcher:0,changer:0};
+      answers.forEach(a => scores[a]++);
+      showResult();
+    } else renderQ();
+  };
+
+  window.prevQ = () => {
+    if (cur === 0) return;
+    cur--;
+    renderQ();
   };
 
   async function showResult() {
@@ -435,7 +460,7 @@
       try {
         await addDoc(collection(db, "quiz_results"), {
           name: userName, class: userClass, type: top,
-          scores: {...scores}, time: serverTimestamp()
+          scores: {...scores}, answers: [...answers], time: serverTimestamp()
         });
       } catch(e) { console.error("儲存失敗:", e); }
     }
@@ -529,7 +554,9 @@
         </div>`;
       }).join("");
 
-      const rows = all.map(r => {
+      window._allResults = all;
+
+      const rows = all.map((r, idx) => {
         const t = types[r.type];
         const time = r.time?.toDate ? r.time.toDate().toLocaleString("zh-TW",{hour12:false}) : "—";
         const scoreBreakdown = r.scores
@@ -539,11 +566,31 @@
               return `<span style="font-size:11px;margin-right:6px;color:${tv.color}">${tv.icon}${p}%</span>`;
             }).join("")
           : "";
+
+        const detailRows = r.answers
+          ? questions.map((q, qi) => {
+              const ans = r.answers[qi];
+              const chosenOpt = ans ? q.opts.find(o => o.ty === ans) : null;
+              const chosenType = ans ? types[ans] : null;
+              return `<div class="detail-q">Q${qi+1}. ${q.q}</div>
+                <div class="detail-a" style="border-color:${chosenType ? chosenType.color : '#ccc'}">
+                  ${chosenOpt ? chosenOpt.t : '—'}
+                  ${chosenType ? `<span style="font-size:11px;color:${chosenType.color};margin-left:6px">${chosenType.icon}${chosenType.name}</span>` : ''}
+                </div>`;
+            }).join("")
+          : "<div style='font-size:13px;color:var(--muted)'>此學生作答時未記錄詳細選項（舊版資料）</div>";
+
         return `<tr>
-          <td>${r.name}</td><td>${r.class}</td>
+          <td><button class="expand-btn" onclick="toggleDetail(${idx})" id="expand-${idx}">▶ ${r.name}</button></td>
+          <td>${r.class}</td>
           <td><span class="type-badge" style="background:${t.bg};color:${t.color}">${t.icon} ${t.name}</span></td>
           <td style="color:var(--muted);font-size:12px">${scoreBreakdown}</td>
           <td style="color:var(--muted)">${time}</td>
+        </tr>
+        <tr id="detail-row-${idx}">
+          <td colspan="5" style="padding:0">
+            <div class="detail-panel" id="detail-${idx}">${detailRows}</div>
+          </td>
         </tr>`;
       }).join("");
 
@@ -552,12 +599,13 @@
         <div class="card"><h3>全班人格分佈（累計得分）</h3><div style="margin-top:8px">${barsHTML}</div></div>
         <div class="table-wrap" style="margin-bottom:1rem">
           <table>
-            <thead><tr><th>姓名</th><th>班級</th><th>主要人格</th><th>各類型分佈</th><th>完成時間</th></tr></thead>
+            <thead><tr><th>姓名（點擊展開）</th><th>班級</th><th>主要人格</th><th>各類型分佈</th><th>完成時間</th></tr></thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
         <div class="row-btns">
           <button class="btn btn-outline" onclick="loadDashboard()">重新整理</button>
+          <button class="btn btn-export" onclick="exportExcel()">匯出 Excel</button>
           <button class="btn btn-danger" onclick="clearAllData()">清除全部資料</button>
         </div>`;
 
@@ -575,6 +623,60 @@
       await Promise.all(snap.docs.map(d => deleteDoc(doc(db,"quiz_results",d.id))));
       await loadDashboard();
     } catch(e) { alert("刪除失敗："+e.message); }
+  };
+
+  window.toggleDetail = (idx) => {
+    const panel = document.getElementById("detail-"+idx);
+    const btn   = document.getElementById("expand-"+idx);
+    const name  = window._allResults[idx].name;
+    const isOpen = panel.classList.contains("open");
+    document.querySelectorAll(".detail-panel").forEach(p => p.classList.remove("open"));
+    document.querySelectorAll(".expand-btn").forEach((b,i) => {
+      b.textContent = "▶ " + window._allResults[i].name;
+    });
+    if (!isOpen) {
+      panel.classList.add("open");
+      btn.textContent = "▼ " + name;
+    }
+  };
+
+  window.exportExcel = () => {
+    const all = window._allResults || [];
+    if (!all.length) { alert("沒有資料可以匯出"); return; }
+
+    const typeKeys = ["inventor","creator","researcher","changer"];
+    const typeNames = {inventor:"發明家型",creator:"創作者型",researcher:"研究員型",changer:"改革者型"};
+
+    const header = ["姓名","班級","主要人格",
+      "發明家%","創作者%","研究員%","改革者%",
+      ...questions.map((_,i)=>`Q${i+1}`),
+      "完成時間"].join("\t");
+
+    const rows = all.map(r => {
+      const time = r.time?.toDate ? r.time.toDate().toLocaleString("zh-TW",{hour12:false}) : "—";
+      const pcts = typeKeys.map(k => {
+        const sc = r.scores ? (r.scores[k]||0) : 0;
+        return Math.round(sc/questions.length*100)+"%";
+      });
+      const answerTexts = questions.map((q,qi) => {
+        const ans = r.answers ? r.answers[qi] : null;
+        if (!ans) return "—";
+        const opt = q.opts.find(o=>o.ty===ans);
+        return opt ? opt.t : "—";
+      });
+      return [r.name, r.class, typeNames[r.type]||r.type,
+        ...pcts, ...answerTexts, time].join("\t");
+    });
+
+    const tsv = [header, ...rows].join("\n");
+    const bom = "\uFEFF";
+    const blob = new Blob([bom+tsv], {type:"text/tab-separated-values;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "創客人格測驗結果.xls";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 </script>
 </body>
