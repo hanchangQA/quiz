@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>創客人格測驗</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+  :root {
+    --teal:    #1D9E75;
+    --teal-bg: #E1F5EE;
+    --blue:    #185FA5;
+    --blue-bg: #E6F1FB;
+    --purple:  #534AB7;
+    --purple-bg: #EEEDFE;
+    --coral:   #993C1D;
+    --coral-bg: #FAECE7;
+    --bg:      #F7F7F5;
+    --white:   #FFFFFF;
+    --border:  #E2E2DE;
+    --text:    #1A1A18;
+    --muted:   #6B6B67;
+    --radius:  10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 3rem 1.5rem 2.5rem;
+    text-align: center;
+  }
+  .hero-badge {
+    display: inline-block;
+    padding: 4px 14px;
+    background: var(--teal-bg);
+    color: var(--teal);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 1rem;
+  }
+  .hero h1 {
+    font-size: clamp(1.6rem, 5vw, 2.2rem);
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: .75rem;
+  }
+  .hero p {
+    font-size: 15px;
+    color: var(--muted);
+    max-width: 400px;
+    margin: 0 auto 1.5rem;
+    line-height: 1.6;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .card h3 {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-bottom: .6rem;
+  }
+
+  /* ── CONTAINER ── */
+  .container { max-width: 560px; margin: 0 auto; padding: 1.5rem 1rem; }
+
+  /* ── FORM ── */
+  .field { margin-bottom: 1.1rem; }
+  .field label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 5px; }
+  .field input {
+    width: 100%; padding: 11px 14px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    font-size: 15px; font-family: inherit; background: var(--white);
+    color: var(--text); transition: border-color .15s;
+  }
+  .field input:focus { outline: none; border-color: var(--teal); }
+  .field .err { font-size: 12px; color: #c0392b; margin-top: 4px; min-height: 16px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 12px 28px; border-radius: var(--radius);
+    font-size: 15px; font-weight: 500; font-family: inherit;
+    cursor: pointer; transition: opacity .15s, transform .1s; border: none;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn-primary { background: var(--teal); color: #fff; }
+  .btn-primary:hover { opacity: .9; }
+  .btn-primary:disabled { opacity: .35; cursor: default; }
+  .btn-outline {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-outline:hover { background: var(--bg); }
+  .btn-danger { background: transparent; color: #c0392b; border: 1px solid #f5c6c6; }
+  .btn-danger:hover { background: #fff5f5; }
+  .btn-full { width: 100%; }
+
+  /* ── PROGRESS ── */
+  .prog-wrap { margin-bottom: 1.2rem; }
+  .prog-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .prog-bg { height: 5px; background: var(--border); border-radius: 3px; }
+  .prog-fill { height: 5px; background: var(--teal); border-radius: 3px; transition: width .35s ease; }
+
+  /* ── QUESTION ── */
+  .q-text { font-size: 17px; font-weight: 700; line-height: 1.5; margin-bottom: 1.2rem; }
+  .opts { display: flex; flex-direction: column; gap: 9px; }
+  .opt {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 15px;
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius); cursor: pointer; text-align: left;
+    font-size: 14px; color: var(--text); font-family: inherit;
+    transition: border-color .15s, background .15s;
+  }
+  .opt:hover { border-color: var(--teal); background: var(--teal-bg); }
+  .opt.sel { border-color: var(--teal); background: var(--teal-bg); }
+  .opt-letter {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--bg); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: var(--muted); flex-shrink: 0;
+  }
+  .opt.sel .opt-letter { background: var(--teal); color: #fff; border-color: var(--teal); }
+  .q-nav { display: flex; justify-content: flex-end; margin-top: 1.2rem; }
+
+  /* ── RESULT ── */
+  .result-hero {
+    text-align: center; padding: 1.5rem;
+    border-radius: var(--radius); margin-bottom: 1rem;
+  }
+  .result-icon { font-size: 48px; margin-bottom: .5rem; }
+  .result-name { font-size: 22px; font-weight: 700; }
+  .result-sub { font-size: 14px; margin-top: 4px; opacity: .75; }
+  .tag { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; margin: 3px 3px 0 0; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .bar-label { font-size: 13px; color: var(--muted); width: 72px; flex-shrink: 0; }
+  .bar-bg { flex: 1; height: 7px; background: var(--bg); border-radius: 4px; }
+  .bar-fill { height: 7px; border-radius: 4px; }
+  .bar-pct { font-size: 12px; color: var(--muted); width: 30px; text-align: right; }
+
+  /* ── TEACHER DASHBOARD ── */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 1.2rem; }
+  .stat-box { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
+  .stat-n { font-size: 24px; font-weight: 700; }
+  .stat-l { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .table-wrap { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--bg); padding: 9px 12px; text-align: left; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--border); }
+  td { padding: 9px 12px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg); }
+  .type-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+  .empty-state .icon { font-size: 40px; margin-bottom: .75rem; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 1.2rem 0; }
+  .row-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .teacher-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
+  .teacher-header h2 { font-size: 18px; font-weight: 700; }
+
+  /* ── NAV BAR ── */
+  .nav-bar {
+    background: var(--white); border-bottom: 1px solid var(--border);
+    padding: .75rem 1rem; display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-bar .logo { font-size: 15px; font-weight: 700; color: var(--teal); }
+  .nav-bar .nav-link { font-size: 13px; color: var(--muted); cursor: pointer; text-decoration: underline; background: none; border: none; font-family: inherit; }
+  .nav-bar .nav-link:hover { color: var(--teal); }
+
+  /* ── LOADING ── */
+  .loading { text-align: center; padding: 2rem; color: var(--muted); font-size: 14px; }
+
+  /* ── CONFIG NOTICE ── */
+  .config-notice {
+    background: #FFF8E1; border: 1px solid #FFE082;
+    border-radius: var(--radius); padding: 1rem 1.2rem; margin-bottom: 1rem;
+    font-size: 14px; line-height: 1.6;
+  }
+  .config-notice strong { color: #8a6200; }
+  .config-notice code {
+    background: #FFF3CD; padding: 1px 6px; border-radius: 4px;
+    font-family: monospace; font-size: 13px;
+  }
+
+  @media (max-width: 480px) {
+    .hero { padding: 2rem 1rem 1.5rem; }
+    .container { padding: 1rem .75rem; }
+    .q-text { font-size: 15px; }
+    table { font-size: 12px; }
+    th, td { padding: 7px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div class="nav-bar">
+  <span class="logo">創客人格測驗</span>
+  <button class="nav-link" onclick="showPage('teacher-login')">老師入口</button>
+</div>
+
+<!-- ═══ PAGE: START ═══ -->
+<div id="page-start" class="page active">
+  <div class="hero">
+    <div class="hero-badge">科技專題研究</div>
+    <h1>找到屬於你的<br>創客人格</h1>
+    <p>10 個問題，3 分鐘，幫你找到最適合的科技專題方向。</p>
+  </div>
+  <div class="container">
+    <div class="config-notice" id="config-notice" style="display:none">
+      <strong>⚠️ 尚未設定 Firebase</strong><br>
+      請打開 index.html，找到 <code>firebaseConfig</code> 區塊，填入你的 Firebase 專案設定。<br>
+      詳細步驟請見 <strong>setup-guide.md</strong>。
+    </div>
+    <div class="card">
+      <h3>填寫基本資料</h3>
+      <div class="field">
+        <label>姓名</label>
+        <input type="text" id="inp-name" placeholder="你的名字" oninput="clearE('e-name')">
+        <div class="err" id="e-name"></div>
+      </div>
+      <div class="field">
+        <label>班級</label>
+        <input type="text" id="inp-class" placeholder="例如：803班" oninput="clearE('e-class')">
+        <div class="err" id="e-class"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="startQuiz()">開始測驗</button>
+    </div>
+    <div style="text-align:center;font-size:13px;color:var(--muted);margin-top:.75rem">共 10 題・約 3 分鐘</div>
+  </div>
+</div>
+
+<!-- ═══ PAGE: QUIZ ═══ -->
+<div id="page-quiz" class="page">
+  <div class="container">
+    <div class="prog-wrap">
+      <div class="prog-meta">
+        <span id="q-num"></span>
+        <span id="q-emoji"></span>
+      </div>
+      <div class="prog-bg"><div class="prog-fill" id="prog-fill"></div></div>
+    </div>
+    <div class="q-text" id="q-text"></div>
+    <div class="opts" id="opts"></div>
+    <div class="q-nav">
+      <button class="btn btn-primary" id="btn-next" disabled onclick="nextQ()">下一題</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PAGE: RESULT ═══ -->
+<div id="page-result" class="page">
+  <div class="container">
+    <div id="result-content"></div>
+    <div class="row-btns" style="margin-top:1rem">
+      <button class="btn btn-outline" onclick="resetQuiz()">重新測驗</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PAGE: TEACHER LOGIN ═══ -->
+<div id="page-teacher-login" class="page">
+  <div class="container">
+    <div class="card">
+      <h3>老師入口</h3>
+      <div class="field" style="margin-top:.5rem">
+        <label>密碼</label>
+        <input type="password" id="inp-pwd" placeholder="輸入老師密碼" oninput="clearE('e-pwd')">
+        <div class="err" id="e-pwd"></div>
+      </div>
+      <div class="row-btns">
+        <button class="btn btn-primary" onclick="teacherLogin()">進入</button>
+        <button class="btn btn-outline" onclick="showPage('start')">返回</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:.75rem">預設密碼：<strong>teacher123</strong>（可在程式碼中修改）</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PAGE: TEACHER DASHBOARD ═══ -->
+<div id="page-teacher" class="page">
+  <div class="container">
+    <div class="teacher-header">
+      <h2>測驗結果總覽</h2>
+      <button class="btn btn-outline" style="padding:6px 14px;font-size:13px" onclick="showPage('start')">返回首頁</button>
+    </div>
+    <div id="dashboard-content"><div class="loading">載入中...</div></div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, query, orderBy }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  /* ══════════════════════════════════════════════
+     ▼▼▼  填入你的 Firebase 設定  ▼▼▼
+     從 Firebase Console > 專案設定 > 你的應用程式複製
+  ══════════════════════════════════════════════ */
+ const firebaseConfig = {
+  apiKey: "AIzaSyCQAwD5a2nZCNNJ0gnG5GFBqb5rMQws3Bs",
+  authDomain: "quiz-maker-personality.firebaseapp.com",
+  projectId: "quiz-maker-personality",
+  storageBucket: "quiz-maker-personality.firebasestorage.app",
+  messagingSenderId: "341066264169",
+  appId: "1:341066264169:web:654a15db37acfad940bcf8"
+};
+  /* ▲▲▲  填入結束  ▲▲▲ */
+
+  const TEACHER_PWD = "teacher123"; // 可修改老師密碼
+
+  let app, db, configured = false;
+  try {
+    if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+      app = initializeApp(firebaseConfig);
+      db  = getFirestore(app);
+      configured = true;
+    }
+  } catch(e) { console.error(e); }
+
+  if (!configured) document.getElementById("config-notice").style.display = "block";
+
+  /* ── 資料 ── */
+  const questions = [
+    {q:"假日有空的時候，你比較喜歡做什麼？",e:"🌟",opts:[{t:"拆開東西研究怎麼運作",ty:"inventor"},{t:"想像一個不存在的世界或故事",ty:"creator"},{t:"找資料、比較、整理筆記",ty:"researcher"},{t:"思考怎麼幫助身邊的人",ty:"changer"}]},
+    {q:"看到生活中一個問題，你第一個反應是？",e:"💡",opts:[{t:"馬上動手想怎麼解決",ty:"inventor"},{t:"先觀察，搜集更多資訊",ty:"researcher"},{t:"想一個有創意的解決方案",ty:"creator"},{t:"想這個問題影響了哪些人",ty:"changer"}]},
+    {q:"你的房間或書桌上最常看到什麼？",e:"🏠",opts:[{t:"工具、零件、模型",ty:"inventor"},{t:"素描本、畫具、貼紙",ty:"creator"},{t:"很多書和做了很多筆記",ty:"researcher"},{t:"跟朋友的合照、手工藝品",ty:"changer"}]},
+    {q:"做專題時，你最享受哪個階段？",e:"🔥",opts:[{t:"實際動手做出成品",ty:"inventor"},{t:"設計版面和視覺呈現",ty:"creator"},{t:"收集數據和分析結果",ty:"researcher"},{t:"訪問別人了解他們的需求",ty:"changer"}]},
+    {q:"如果可以選擇，你最想參加哪種課外活動？",e:"🎯",opts:[{t:"機器人或電子電路社",ty:"inventor"},{t:"美術、設計或遊戲開發",ty:"creator"},{t:"科學展覽或辯論社",ty:"researcher"},{t:"志工服務或環保社",ty:"changer"}]},
+    {q:"你最崇拜的人是哪種類型？",e:"⭐",opts:[{t:"發明家（像愛迪生、馬斯克）",ty:"inventor"},{t:"藝術家（像宮崎駿、賈伯斯）",ty:"creator"},{t:"科學家（像居里夫人、霍金）",ty:"researcher"},{t:"社會企業家（關心弱勢族群）",ty:"changer"}]},
+    {q:"小組合作時，你通常扮演什麼角色？",e:"👥",opts:[{t:"負責把想法做出來的人",ty:"inventor"},{t:"讓報告或作品變好看的人",ty:"creator"},{t:"查資料確認事實的人",ty:"researcher"},{t:"協調大家意見的人",ty:"changer"}]},
+    {q:"如果你的科技專題成功了，你最希望達到什麼？",e:"🚀",opts:[{t:"做出一個真正能用的裝置或系統",ty:"inventor"},{t:"讓使用者覺得好用又好看",ty:"creator"},{t:"發現別人不知道的規律或現象",ty:"researcher"},{t:"幫助某一群人解決困擾",ty:"changer"}]},
+    {q:"面對失敗的時候，你的態度是？",e:"💪",opts:[{t:"重新設計、再做一個版本",ty:"inventor"},{t:"重新思考，換個方向試試",ty:"creator"},{t:"找出失敗的原因和數據",ty:"researcher"},{t:"問問別人的意見再改",ty:"changer"}]},
+    {q:"你覺得未來最想用科技改變什麼？",e:"🌍",opts:[{t:"讓日常生活更自動化、更方便",ty:"inventor"},{t:"讓學習和娛樂更有趣",ty:"creator"},{t:"讓人類更了解自然或宇宙",ty:"researcher"},{t:"幫助弱勢族群或解決社會問題",ty:"changer"}]}
+  ];
+
+  const types = {
+    inventor:   {name:"發明家型",icon:"🔧",color:"#1D9E75",bg:"#E1F5EE",desc:"你喜歡動手做、解決實際問題，擅長把想法變成真實成品。",topics:["Arduino互動裝置","智慧家庭系統","機器人設計","感測器應用","3D列印專題"]},
+    creator:    {name:"創作者型",icon:"🎨",color:"#185FA5",bg:"#E6F1FB",desc:"你有豐富想像力，在意設計和美感，擅長用視覺說故事。",topics:["App介面設計","互動藝術裝置","遊戲設計","動畫與視覺化","AI創作工具"]},
+    researcher: {name:"研究員型",icon:"🔍",color:"#534AB7",bg:"#EEEDFE",desc:"你對知識充滿好奇，善於整理資訊、從數據中找規律。",topics:["數據分析專案","機器學習實驗","科學測量研究","爬蟲與資料視覺化","自然語言分析"]},
+    changer:    {name:"改革者型",icon:"🌍",color:"#993C1D",bg:"#FAECE7",desc:"你有同理心，想用科技幫助更多人，以人為本。",topics:["輔助身障者裝置","長者科技應用","食物浪費追蹤","校園安全系統","環境監測平台"]}
+  };
+
+  let cur=0, scores={inventor:0,creator:0,researcher:0,changer:0}, sel=null;
+  let userName="", userClass="";
+
+  /* ── 頁面切換 ── */
+  window.showPage = (id) => {
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    document.getElementById("page-"+id).classList.add("active");
+    window.scrollTo(0,0);
+  };
+
+  /* ── 清錯誤 ── */
+  window.clearE = (id) => document.getElementById(id).textContent = "";
+
+  /* ── 開始測驗 ── */
+  window.startQuiz = () => {
+    const n = document.getElementById("inp-name").value.trim();
+    const c = document.getElementById("inp-class").value.trim();
+    let ok = true;
+    if (!n) { document.getElementById("e-name").textContent = "請輸入姓名"; ok=false; }
+    if (!c) { document.getElementById("e-class").textContent = "請輸入班級"; ok=false; }
+    if (!ok) return;
+    userName=n; userClass=c;
+    cur=0; scores={inventor:0,creator:0,researcher:0,changer:0}; sel=null;
+    showPage("quiz"); renderQ();
+  };
+
+  function renderQ() {
+    const q = questions[cur];
+    document.getElementById("q-num").textContent = `問題 ${cur+1} / ${questions.length}`;
+    document.getElementById("q-emoji").textContent = q.e;
+    document.getElementById("q-text").textContent = q.q;
+    document.getElementById("prog-fill").style.width = ((cur+1)/questions.length*100)+"%";
+    sel = null;
+    const btn = document.getElementById("btn-next");
+    btn.disabled = true;
+    btn.textContent = cur === questions.length-1 ? "查看結果 ✨" : "下一題";
+
+    const opts = document.getElementById("opts");
+    opts.innerHTML = "";
+    ["A","B","C","D"].forEach((L,i) => {
+      const o = q.opts[i];
+      const b = document.createElement("button");
+      b.className = "opt";
+      b.innerHTML = `<span class="opt-letter">${L}</span><span>${o.t}</span>`;
+      b.onclick = () => {
+        document.querySelectorAll(".opt").forEach(x => x.classList.remove("sel"));
+        b.classList.add("sel"); sel = o.ty;
+        document.getElementById("btn-next").disabled = false;
+      };
+      opts.appendChild(b);
+    });
+  }
+
+  window.nextQ = () => {
+    if (!sel) return;
+    scores[sel]++;
+    cur++;
+    if (cur >= questions.length) showResult();
+    else renderQ();
+  };
+
+  async function showResult() {
+    const top = Object.entries(scores).sort((a,b)=>b[1]-a[1])[0][0];
+    const t = types[top];
+    const total = questions.length;
+    const pct = k => Math.round(scores[k]/total*100);
+
+    /* 儲存到 Firebase */
+    if (configured) {
+      try {
+        await addDoc(collection(db, "quiz_results"), {
+          name: userName, class: userClass, type: top,
+          scores: {...scores}, time: serverTimestamp()
+        });
+      } catch(e) { console.error("儲存失敗:", e); }
+    }
+
+    const bars = Object.keys(types).map(k => {
+      const p = pct(k);
+      return `<div class="bar-row">
+        <span class="bar-label">${types[k].icon} ${types[k].name.replace("型","")}</span>
+        <div class="bar-bg"><div class="bar-fill" style="width:${p}%;background:${types[k].color}"></div></div>
+        <span class="bar-pct">${p}%</span>
+      </div>`;
+    }).join("");
+
+    const tags = t.topics.map(tp =>
+      `<span class="tag" style="background:${t.bg};color:${t.color}">${tp}</span>`
+    ).join("");
+
+    document.getElementById("result-content").innerHTML = `
+      <div class="result-hero" style="background:${t.bg}">
+        <div class="result-icon">${t.icon}</div>
+        <div class="result-name" style="color:${t.color}">${t.name}</div>
+        <div class="result-sub" style="color:${t.color}">${userName} 同學</div>
+      </div>
+      <div class="card"><h3>你的特質</h3><p style="font-size:14px;line-height:1.7">${t.desc}</p></div>
+      <div class="card"><h3>適合的專題方向</h3><div style="margin-top:4px">${tags}</div></div>
+      <div class="card"><h3>各類型分佈</h3><div style="margin-top:8px">${bars}</div></div>`;
+
+    showPage("result");
+  }
+
+  window.resetQuiz = () => {
+    document.getElementById("inp-name").value = "";
+    document.getElementById("inp-class").value = "";
+    showPage("start");
+  };
+
+  /* ── 老師登入 ── */
+  window.teacherLogin = async () => {
+    const p = document.getElementById("inp-pwd").value;
+    if (p !== TEACHER_PWD) { document.getElementById("e-pwd").textContent = "密碼錯誤"; return; }
+    showPage("teacher");
+    await loadDashboard();
+  };
+
+  async function loadDashboard() {
+    const el = document.getElementById("dashboard-content");
+    if (!configured) {
+      el.innerHTML = `<div class="config-notice"><strong>尚未設定 Firebase</strong><br>請先完成 Firebase 設定才能收集資料。</div>`;
+      return;
+    }
+    el.innerHTML = `<div class="loading">載入中...</div>`;
+    try {
+      const q = query(collection(db,"quiz_results"), orderBy("time","desc"));
+      const snap = await getDocs(q);
+      const all = snap.docs.map(d => ({id:d.id, ...d.data()}));
+
+      if (all.length === 0) {
+        el.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>還沒有學生完成測驗</p></div>`;
+        return;
+      }
+
+      const counts = {inventor:0,creator:0,researcher:0,changer:0};
+      all.forEach(r => counts[r.type]++);
+      const topType = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0][0];
+
+      const statsHTML = `<div class="stats-row">
+        <div class="stat-box"><div class="stat-n">${all.length}</div><div class="stat-l">完成人數</div></div>
+        ${Object.entries(counts).map(([k,v])=>`
+          <div class="stat-box">
+            <div class="stat-n">${types[k].icon} ${v}</div>
+            <div class="stat-l">${types[k].name}</div>
+          </div>`).join("")}
+      </div>`;
+
+      const barsHTML = Object.entries(counts).map(([k,v])=>{
+        const p = Math.round(v/all.length*100);
+        return `<div class="bar-row">
+          <span class="bar-label">${types[k].icon} ${types[k].name.replace("型","")}</span>
+          <div class="bar-bg"><div class="bar-fill" style="width:${p}%;background:${types[k].color}"></div></div>
+          <span class="bar-pct">${p}%</span>
+        </div>`;
+      }).join("");
+
+      const rows = all.map(r => {
+        const t = types[r.type];
+        const time = r.time?.toDate ? r.time.toDate().toLocaleString("zh-TW",{hour12:false}) : "—";
+        return `<tr>
+          <td>${r.name}</td><td>${r.class}</td>
+          <td><span class="type-badge" style="background:${t.bg};color:${t.color}">${t.icon} ${t.name}</span></td>
+          <td style="color:var(--muted)">${time}</td>
+        </tr>`;
+      }).join("");
+
+      el.innerHTML = `
+        ${statsHTML}
+        <div class="card"><h3>人格分佈</h3><div style="margin-top:8px">${barsHTML}</div></div>
+        <div class="table-wrap" style="margin-bottom:1rem">
+          <table>
+            <thead><tr><th>姓名</th><th>班級</th><th>人格類型</th><th>完成時間</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div class="row-btns">
+          <button class="btn btn-outline" onclick="loadDashboard()">重新整理</button>
+          <button class="btn btn-danger" onclick="clearAllData()">清除全部資料</button>
+        </div>`;
+
+    } catch(e) {
+      el.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>載入失敗：${e.message}</p></div>`;
+    }
+  }
+
+  window.loadDashboard = loadDashboard;
+
+  window.clearAllData = async () => {
+    if (!confirm("確定要刪除所有學生測驗結果嗎？此動作無法復原。")) return;
+    try {
+      const snap = await getDocs(collection(db,"quiz_results"));
+      await Promise.all(snap.docs.map(d => deleteDoc(doc(db,"quiz_results",d.id))));
+      await loadDashboard();
+    } catch(e) { alert("刪除失敗："+e.message); }
+  };
+</script>
+</body>
+</html>
